@@ -5,21 +5,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 public class NaiveBayesClassifier {
 
+  private static Logger logger = 
+      Logger.getLogger(NaiveBayesClassifier.class.getPackage().getName());
+  
   private Map<String, Integer> generalLabelCounts = 
       new HashMap<String, Integer>();
   private ArrayList<Map<String, Map<String, Integer>>> attrValLabelCounts = 
       new ArrayList<Map<String, Map<String, Integer>>>();
 
+  /**
+   * Builds a classifier using the given training data
+   * @param trainingData a list of {@code DataVector}s
+   */
   public NaiveBayesClassifier(List<DataVector> trainingData) {
     int numAttributes = trainingData.get(0).getData().length;
 
     boolean isFirstVector = true;
     for (int v = 0; v < trainingData.size(); v++) {
       DataVector vector = trainingData.get(v);
-      System.out.println("Processing vector " + v);
+      logger.fine("Processing vector " + v);
 
       String label = vector.getLabel();
       // increment number of tuples with current label
@@ -55,9 +63,9 @@ public class NaiveBayesClassifier {
       isFirstVector = false;
     }
 
-    System.out.println("Counts per class:");
+    logger.fine("Counts per class:");
     for (Entry<String, Integer> entry : generalLabelCounts.entrySet()) {
-      System.out.println(entry.getKey() + ": " + entry.getValue());
+      logger.fine(entry.getKey() + ": " + entry.getValue());
     }
 
     for (int i = 0; i < attrValLabelCounts.size(); i++) {
@@ -65,7 +73,7 @@ public class NaiveBayesClassifier {
           .get(i).entrySet()) {
         String attrVal = entry.getKey();
         for (Entry<String, Integer> count : entry.getValue().entrySet()) {
-          System.out.println(String.format(
+          logger.fine(String.format(
               "AttrIdx:%d,attrVal:%s,class:%s: %d", i, attrVal, count.getKey(),
               count.getValue()));
         }
@@ -74,7 +82,37 @@ public class NaiveBayesClassifier {
 
   }
 
+  /**
+   * Classifies a given vector of attributes.
+   * @param vector
+   * @return the predicted class label
+   */
   public String classify(DataVector vector) {
-    return null;
+    float maxProduct = 0;
+    String predictedLabel = null;
+    
+    for (Entry<String, Integer> entry: generalLabelCounts.entrySet()) {
+      String label = entry.getKey();
+      int numMatchingLabel = entry.getValue();
+      
+      float product = 1;
+      String[] data = vector.getData();
+      for (int k = 0; k < data.length; k++) {
+        // get number of x_k with label C_i
+        
+        Integer nullable = 
+            attrValLabelCounts.get(k).get(data[k]).get(label);
+        int numMatchingValLabel = nullable == null ? 0 : nullable;
+        
+        product *= ((float) numMatchingValLabel / numMatchingLabel);
+      }
+      
+      if (product > maxProduct) {
+        maxProduct = product;
+        predictedLabel = label;
+      }
+    }
+    
+    return predictedLabel;
   }
 }
