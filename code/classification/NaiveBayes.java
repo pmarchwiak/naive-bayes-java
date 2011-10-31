@@ -8,21 +8,30 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class NaiveBayes {
 
-	public static void main(String[] args) {
-		String usage = "java " + NaiveBayes.class.getName() + " training_file testing_file";
-		
-		if (args.length != 2) {
-		  System.out.println(usage);
-		  System.exit(1);
-		}
-		
-		File trainingFile = new File(args[0]);
-		File testingFile = new File(args[1]);
-		
-		List<DataVector> trainingData;
+  private static Logger logger = Logger.getLogger(NaiveBayes.class.getName());
+  static {
+    logger.addHandler(new ConsoleHandler());
+  }
+
+  public static void main(String[] args) {
+    String usage = "java " + NaiveBayes.class.getName()
+        + " training_file testing_file";
+
+    if (args.length != 2) {
+      System.out.println(usage);
+      System.exit(1);
+    }
+
+    File trainingFile = new File(args[0]);
+    File testingFile = new File(args[1]);
+
+    List<DataVector> trainingData;
     try {
       trainingData = parseData(trainingFile);
       NaiveBayesClassifier classifier = new NaiveBayesClassifier(trainingData);
@@ -34,24 +43,30 @@ public class NaiveBayes {
       e.printStackTrace();
     }
 
-	}
+  }
 
   private static List<DataVector> parseData(File dataFile) throws IOException {
     FileInputStream fis = new FileInputStream(dataFile);
     BufferedReader br = new BufferedReader(new InputStreamReader(fis));
     String line;
     List<DataVector> dataSet = new ArrayList<DataVector>();
-    while((line = br.readLine()) != null) {
+    while ((line = br.readLine()) != null) {
       String[] lineData = line.split("\t");
       String label = lineData[0];
+
+      logger.log(Level.FINE, "Parsing line " + line);
+      System.out.println("Parsing line " + line);
+
       ArrayList<String> data = new ArrayList<String>();
       for (int i = 1; i < lineData.length; i++) {
         data.add(lineData[i]);
       }
-      
-      dataSet.add(new DataVector(label, data.toArray(new String[]{})));
+
+      if (data.size() > 0) {
+        dataSet.add(new DataVector(label, data.toArray(new String[] {})));
+      }
     }
-    
+
     return dataSet;
   }
 
