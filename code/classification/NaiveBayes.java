@@ -43,7 +43,7 @@ public class NaiveBayes {
       List<DataVector> trainingData = parseData(trainingFile);
       
       // build classifier
-      NaiveBayesClassifier classifier = new NaiveBayesClassifier(trainingData);
+      Classifier classifier = new NaiveBayesClassifier(trainingData);
       
       int numTruePos = 0;
       int numFalseNeg = 0;

@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-public class NaiveBayesClassifier {
+public class NaiveBayesClassifier implements Classifier {
 
   private static Logger logger = 
       Logger.getLogger(NaiveBayesClassifier.class.getPackage().getName());
@@ -87,6 +87,7 @@ public class NaiveBayesClassifier {
    * @param vector
    * @return the predicted class label
    */
+  @Override
   public String classify(DataVector vector) {
     float maxProduct = 0;
     String predictedLabel = null;
