@@ -2,50 +2,49 @@ package classification;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
+import java.util.Set;
 import java.util.logging.Logger;
-
-import com.sun.org.apache.xerces.internal.impl.dv.dtd.NMTOKENDatatypeValidator;
 
 public class AdaBoostClassifier implements Classifier {
 
   private static Logger logger = 
       Logger.getLogger(AdaBoostClassifier.class.getPackage().getName());
   
+  private final Map<Classifier, Double> modelErrorRates = 
+      new HashMap<Classifier, Double>();
+  
   public AdaBoostClassifier(List<DataVector> trainingData, int numRounds) {     
-    Random random = new Random();
     int numSamples = trainingData.size();
     
-    Map<Classifier, Float> modelErrorRates = new HashMap<Classifier, Float>();
-    
     //init tuple weights to 1 / numSamples
-    Map<DataVector, Float> weights = new HashMap<DataVector, Float>();
-    float initialWeight = ((float) 1) / numSamples;
+    Map<DataVector, Double> weights = new HashMap<DataVector, Double>();
+    double initialWeight = ((double) 1) / numSamples;
     for (DataVector v: trainingData) {
       weights.put(v, initialWeight);
     }
     
     // build the composite model
     for (int k = 0; k < numRounds; k++) {
-      // sample D with replacement
-      // TODO base probability of selection on weight
+      // sample D with replacement based on weight
       List<DataVector> dataForRound = new ArrayList<DataVector>();
+      WeightedRandom<DataVector> random = 
+          new WeightedRandom<DataVector>(weights);
       for (int i = 0; i < numSamples; i++) {
-        DataVector randomSelection = trainingData.get(random.nextInt(numSamples));
+        DataVector randomSelection = random.next();
         dataForRound.add(randomSelection);
       }
       
-      float errorRate = 0;
+      double errorRate = 0;
       boolean[] isCorrect = new boolean[numSamples];
       do {
         // create model for this round
         NaiveBayesClassifier nb = new NaiveBayesClassifier(dataForRound);
         
         // calculate error rate 
-        
         for (int n = 0; n < numSamples; n++) {
           DataVector v = dataForRound.get(n);
           String predicted = nb.classify(v);
@@ -59,46 +58,74 @@ public class AdaBoostClassifier implements Classifier {
         }
         
         modelErrorRates.put(nb, errorRate);
+        logger.fine(String.format("Round %d, error rate: %f", k, errorRate));
       } 
-      while (errorRate > 0.5);
+      while (errorRate > 0.5); // try again if the rate is too high
       
-      float oldWeightsSum = 0;
-      for (Float weight: weights.values()) {
-        oldWeightsSum += weight;
-      }
+      double oldWeightsSum = sum(weights);
       
-      // TODO multiply the weight of each correctly classified tuple 
+      //  multiply the weight of each correctly classified tuple 
       // by errR/(1-errR)
-      float weightMultiplier = errorRate / (1 - errorRate);
+      double weightMultiplier = errorRate / (1 - errorRate);
+      Set<DataVector> alreadyAdjusted = new HashSet<DataVector>();
       
       for (int n = 0; n < numSamples; n++) {
-        if (isCorrect[n]) {
-          // FIXME if vector appears more than once it shouldn't be multiplied 
-          // twice
-          DataVector vec = dataForRound.get(n);
-          float oldWeight = weights.get(vec);
-          float newWeight = oldWeight * weightMultiplier;
+        DataVector vec = dataForRound.get(n);
+        if (isCorrect[n] && !alreadyAdjusted.contains(vec)) {
+          double oldWeight = weights.get(vec);
+          double newWeight = oldWeight * weightMultiplier;
           weights.put(vec, newWeight);
+          
+          alreadyAdjusted.add(vec);
         }
       }
       
-      float newWeightsSum = 0;
-      for (Float weight: weights.values()) {
-        newWeightsSum += weight;
-      }
+      double newWeightsSum = sum(weights);
       
       // normalize the weight of each tuple
-      float multiplier = oldWeightsSum / newWeightsSum;
-      for (Entry<DataVector, Float> entry: weights.entrySet()) {
-        float weight = entry.getValue();
+      double multiplier = oldWeightsSum / newWeightsSum;
+      for (Entry<DataVector, Double> entry: weights.entrySet()) {
+        double weight = entry.getValue();
         weights.put(entry.getKey(), weight * multiplier);
       }
     }
   }
 
+  private double sum(Map<DataVector, Double> weights) {
+    double sum = 0;
+    for (Double weight: weights.values()) {
+      sum += weight;
+    }
+    return sum;
+  }
+
   @Override
   public String classify(DataVector vector) {
-    // TODO Auto-generated method stub
-    return null;
+    Map<String, Double> labelVotes = new HashMap<String, Double>();
+    
+    for (Classifier model:  modelErrorRates.keySet()) {
+      String label = model.classify(vector);
+      
+      Double votes = labelVotes.get(label);
+      if (votes == null) {
+        votes = Double.valueOf(0);
+      }
+      
+      double errorRate =  modelErrorRates.get(model);
+      double vote = Math.log((1 - errorRate) / errorRate);
+      labelVotes.put(label, votes + vote);
+    }
+    
+    double max = 0;
+    String predictedLabel = "";
+    for (String label: labelVotes.keySet()) {
+      double votes = labelVotes.get(label);
+      if (votes > max) {
+        max = votes;
+        predictedLabel = label;
+      }
+    }
+    
+    return predictedLabel;
   }
 }
