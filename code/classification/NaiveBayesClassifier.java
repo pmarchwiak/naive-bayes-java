@@ -5,12 +5,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class NaiveBayesClassifier implements Classifier {
 
   private static Logger logger = 
       Logger.getLogger(NaiveBayesClassifier.class.getPackage().getName());
+  static {
+    ConsoleHandler ch = new ConsoleHandler();
+    ch.setFormatter(new SimpleFormatter());
+    logger.addHandler(ch);
+  }
   
   private Map<String, Integer> generalLabelCounts = 
       new HashMap<String, Integer>();
@@ -101,9 +108,13 @@ public class NaiveBayesClassifier implements Classifier {
       for (int k = 0; k < data.length; k++) {
         // get number of x_k with label C_i
         
-        Integer nullable = 
-            attrValLabelCounts.get(k).get(data[k]).get(label);
-        int numMatchingValLabel = nullable == null ? 0 : nullable;
+        Map<String, Map<String, Integer>> attrKCounts = attrValLabelCounts.get(k);
+        Map<String, Integer> valCounts = attrKCounts.get(data[k]);
+
+        int numMatchingValLabel = 0;
+        if (valCounts != null && valCounts.containsKey(label)) {
+          numMatchingValLabel = valCounts.get(label);
+        }
         
         product *= ((float) numMatchingValLabel / numMatchingLabel);
       }

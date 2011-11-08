@@ -20,74 +20,141 @@ public class AdaBoostClassifier implements Classifier {
   public AdaBoostClassifier(List<DataVector> trainingData, int numRounds) {     
     int numSamples = trainingData.size();
     
-    //init tuple weights to 1 / numSamples
-    Map<DataVector, Double> weights = new HashMap<DataVector, Double>();
-    double initialWeight = ((double) 1) / numSamples;
-    for (DataVector v: trainingData) {
-      weights.put(v, initialWeight);
-    }
+    Map<DataVector, Double> weights = initializeWeights(trainingData);
     
-    // build the composite model
     for (int k = 0; k < numRounds; k++) {
-      // sample D with replacement based on weight
-      List<DataVector> dataForRound = new ArrayList<DataVector>();
-      WeightedRandom<DataVector> random = 
-          new WeightedRandom<DataVector>(weights);
-      for (int i = 0; i < numSamples; i++) {
-        DataVector randomSelection = random.next();
-        dataForRound.add(randomSelection);
-      }
+      List<DataVector> dataForRound = randomSample(weights);
       
       double errorRate = 0;
       boolean[] isCorrect = new boolean[numSamples];
+      int attempts = 0;
       do {
-        // create model for this round
         NaiveBayesClassifier nb = new NaiveBayesClassifier(dataForRound);
         
-        // calculate error rate 
-        for (int n = 0; n < numSamples; n++) {
-          DataVector v = dataForRound.get(n);
-          String predicted = nb.classify(v);
-          
-          if (predicted.equals(v.getLabel())) {
-            isCorrect[n] = true;
-          }
-          else {
-            errorRate += weights.get(v);
-          }
-        }
+        errorRate = calcErrorRate(nb, dataForRound, weights, isCorrect);
         
-        modelErrorRates.put(nb, errorRate);
         logger.fine(String.format("Round %d, error rate: %f", k, errorRate));
+        attempts++;
       } 
-      while (errorRate > 0.5); // try again if the rate is too high
+      while (errorRate > 0.5 /*&& attempts != 30*/); // try again if the rate is too high
+      
+      /*
+      if (attempts == 10) {
+        System.out.println("Can't get error rate below 0.5");
+        System.exit(1);
+      }
+      */
       
       double oldWeightsSum = sum(weights);
       
-      //  multiply the weight of each correctly classified tuple 
-      // by errR/(1-errR)
-      double weightMultiplier = errorRate / (1 - errorRate);
-      Set<DataVector> alreadyAdjusted = new HashSet<DataVector>();
-      
-      for (int n = 0; n < numSamples; n++) {
-        DataVector vec = dataForRound.get(n);
-        if (isCorrect[n] && !alreadyAdjusted.contains(vec)) {
-          double oldWeight = weights.get(vec);
-          double newWeight = oldWeight * weightMultiplier;
-          weights.put(vec, newWeight);
-          
-          alreadyAdjusted.add(vec);
-        }
-      }
+      adjustWeights(weights, dataForRound, isCorrect,
+          errorRate);
       
       double newWeightsSum = sum(weights);
       
-      // normalize the weight of each tuple
-      double multiplier = oldWeightsSum / newWeightsSum;
-      for (Entry<DataVector, Double> entry: weights.entrySet()) {
-        double weight = entry.getValue();
-        weights.put(entry.getKey(), weight * multiplier);
+      normalizeWeights(weights, oldWeightsSum, newWeightsSum);
+    }
+  }
+
+  /**
+   * Init the weight of each tuple to 1/(numTuples)
+   * @param trainingData
+   * @return a map of tuples to their corresponding weight
+   */
+  private Map<DataVector, Double> initializeWeights(
+      List<DataVector> trainingData) {
+    Map<DataVector, Double> weights = new HashMap<DataVector, Double>();
+    double initialWeight = ((double) 1) / trainingData.size();
+    for (DataVector v: trainingData) {
+      weights.put(v, initialWeight);
+    }
+    return weights;
+  }
+  
+  /**
+   * Sample according to tuple weights
+   * @param weights map of tuples to weights
+   * @return
+   */
+  private List<DataVector> randomSample(Map<DataVector, Double> weights) {
+    List<DataVector> dataForRound = new ArrayList<DataVector>();
+    WeightedRandom<DataVector> random = 
+        new WeightedRandom<DataVector>(weights);
+    for (int i = 0; i < weights.size(); i++) {
+      DataVector randomSelection = random.next();
+      dataForRound.add(randomSelection);
+    }
+    return dataForRound;
+  }
+  
+  /**
+   * Compute the error rate of the classifier:
+   * error = sum(w_j * err(X_j)) where
+   * w_j is the weight for tuple j,
+   * err(X_j) is 1 when the tuple was misclassified, 0 otherwise
+   * @param nb the classifier
+   * @param dataForRound
+   * @param weights
+   * @param isCorrect array in which to store correctness for each tuple
+   * 
+   * @return the error rate of the classifier
+   */
+  private double calcErrorRate(NaiveBayesClassifier nb,
+      List<DataVector> dataForRound, Map<DataVector, Double> weights,
+      boolean[] isCorrect) {
+    double errorRate = 0;
+    for (int n = 0; n < dataForRound.size(); n++) {
+      DataVector v = dataForRound.get(n);
+      String predicted = nb.classify(v);
+      
+      if (predicted.equals(v.getLabel())) {
+        isCorrect[n] = true;
       }
+      else {
+        errorRate += weights.get(v);
+      }
+    }
+    return errorRate;
+  }
+
+  /**
+   * For each tuple that was correctly classified, multiply the weight of the
+   * tuple by (errorRate / (1 - errorRate))
+   * @param weights
+   * @param dataForRound
+   * @param isCorrect
+   * @param errorRate
+   */
+  private void adjustWeights(Map<DataVector, Double> weights,
+      List<DataVector> dataForRound, boolean[] isCorrect,
+      double errorRate) {
+    double weightMultiplier = errorRate / (1 - errorRate);
+    Set<DataVector> alreadyAdjusted = new HashSet<DataVector>();
+    for (int n = 0; n < dataForRound.size(); n++) {
+      DataVector vec = dataForRound.get(n);
+      if (isCorrect[n] && !alreadyAdjusted.contains(vec)) {
+        double oldWeight = weights.get(vec);
+        double newWeight = oldWeight * weightMultiplier;
+        weights.put(vec, newWeight);
+        
+        alreadyAdjusted.add(vec);
+      }
+    }
+  }
+  
+  /**
+   * Normalize weights by multiplying by the sum of the old weights and 
+   * dividing by the sum of the new weights.
+   * @param weights
+   * @param oldWeightsSum
+   * @param newWeightsSum
+   */
+  private void normalizeWeights(Map<DataVector, Double> weights,
+      double oldWeightsSum, double newWeightsSum) {
+    double multiplier = oldWeightsSum / newWeightsSum;
+    for (Entry<DataVector, Double> entry: weights.entrySet()) {
+      double weight = entry.getValue();
+      weights.put(entry.getKey(), weight * multiplier);
     }
   }
 

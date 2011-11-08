@@ -55,11 +55,12 @@ public class ClassifierRunner {
     
     List<DataVector> testingData = parseData(testingFile);
     
-    // Use the classifier to determine the predicated label of each test 
+    // Use the classifier to determine the predicted label of each test 
     // vector and compare against its actual label.
     for (DataVector vector: testingData) {
       int actualLabel = ClassifierRunner.intForLabel(vector.getLabel());
-      int predictedLabel = ClassifierRunner.intForLabel(classifier.classify(vector));
+      int predictedLabel = 
+          ClassifierRunner.intForLabel(classifier.classify(vector));
       
       if (actualLabel == 1 && predictedLabel == 1) {
         numTruePos++;
@@ -88,6 +89,7 @@ public class ClassifierRunner {
     else if ("+1".equals(label)) {
       return 1;
     }
+    logger.fine("unrecognized label: " + label);
     return null;
   }
 
