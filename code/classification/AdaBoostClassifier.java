@@ -27,14 +27,14 @@ public class AdaBoostClassifier implements Classifier {
       
       double errorRate = 0;
       boolean[] isCorrect = new boolean[numSamples];
-      int attempts = 0;
+      //int attempts = 0;
       do {
         NaiveBayesClassifier nb = new NaiveBayesClassifier(dataForRound);
         
         errorRate = calcErrorRate(nb, dataForRound, weights, isCorrect);
         
         logger.fine(String.format("Round %d, error rate: %f", k, errorRate));
-        attempts++;
+        //attempts++;
       } 
       while (errorRate > 0.5 /*&& attempts != 30*/); // try again if the rate is too high
       
@@ -191,6 +191,10 @@ public class AdaBoostClassifier implements Classifier {
         max = votes;
         predictedLabel = label;
       }
+    }
+    
+    if (predictedLabel.length() == 0) {
+      logger.warning("No label predicted for vector " + vector);
     }
     
     return predictedLabel;

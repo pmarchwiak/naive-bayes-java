@@ -37,6 +37,10 @@ public class NaiveBayesClassifier implements Classifier {
       logger.fine("Processing vector " + v);
 
       String label = vector.getLabel();
+      if (label == null || label.length() == 0) {
+        continue;
+      }
+      
       // increment number of tuples with current label
       Integer labelCount = generalLabelCounts.get(label);
       if (labelCount == null) {
@@ -112,11 +116,17 @@ public class NaiveBayesClassifier implements Classifier {
         Map<String, Integer> valCounts = attrKCounts.get(data[k]);
 
         int numMatchingValLabel = 0;
+        int totalMatchingLabel = numMatchingLabel;
         if (valCounts != null && valCounts.containsKey(label)) {
           numMatchingValLabel = valCounts.get(label);
         }
+        else {
+          // perform Laplacian correction
+          numMatchingValLabel = 1;
+          totalMatchingLabel++;
+        }
         
-        product *= ((float) numMatchingValLabel / numMatchingLabel);
+        product *= ((float) numMatchingValLabel / totalMatchingLabel);
       }
       
       if (product > maxProduct) {
