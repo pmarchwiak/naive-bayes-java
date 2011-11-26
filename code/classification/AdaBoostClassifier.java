@@ -17,33 +17,35 @@ public class AdaBoostClassifier implements Classifier {
   private final Map<Classifier, Double> modelErrorRates = 
       new HashMap<Classifier, Double>();
   
+  private static final int MAX_ATTEMPTS = -1;
+  
   public AdaBoostClassifier(List<DataVector> trainingData, int numRounds) {     
     int numSamples = trainingData.size();
     
     Map<DataVector, Double> weights = initializeWeights(trainingData);
     
-    for (int k = 0; k < numRounds; k++) {
+    for (int k = 1; k <= numRounds; k++) {
       List<DataVector> dataForRound = randomSample(weights);
       
       double errorRate = 0;
       boolean[] isCorrect = new boolean[numSamples];
-      //int attempts = 0;
+      NaiveBayesClassifier nb = null;
+      int attempts = 0;
       do {
-        NaiveBayesClassifier nb = new NaiveBayesClassifier(dataForRound);
+        nb = new NaiveBayesClassifier(dataForRound);
         
-        errorRate = calcErrorRate(nb, dataForRound, weights, isCorrect);
+        errorRate = calcErrorRate(nb, trainingData, weights, isCorrect);
         
         logger.fine(String.format("Round %d, error rate: %f", k, errorRate));
-        //attempts++;
+        attempts++;
       } 
-      while (errorRate > 0.5 /*&& attempts != 30*/); // try again if the rate is too high
+      while (errorRate > 0.5d && attempts != MAX_ATTEMPTS); // try again if the rate is too high
       
-      /*
-      if (attempts == 10) {
-        System.out.println("Can't get error rate below 0.5");
+      if (attempts == MAX_ATTEMPTS) {
+        System.out.println("Can't get error rate below 0.5 after " + 
+            MAX_ATTEMPTS + " attempts.");
         System.exit(1);
       }
-      */
       
       double oldWeightsSum = sum(weights);
       
@@ -53,6 +55,8 @@ public class AdaBoostClassifier implements Classifier {
       double newWeightsSum = sum(weights);
       
       normalizeWeights(weights, oldWeightsSum, newWeightsSum);
+      
+      modelErrorRates.put(nb, errorRate);
     }
   }
 
@@ -93,18 +97,18 @@ public class AdaBoostClassifier implements Classifier {
    * w_j is the weight for tuple j,
    * err(X_j) is 1 when the tuple was misclassified, 0 otherwise
    * @param nb the classifier
-   * @param dataForRound
+   * @param data
    * @param weights
    * @param isCorrect array in which to store correctness for each tuple
    * 
    * @return the error rate of the classifier
    */
   private double calcErrorRate(NaiveBayesClassifier nb,
-      List<DataVector> dataForRound, Map<DataVector, Double> weights,
+      List<DataVector> data, Map<DataVector, Double> weights,
       boolean[] isCorrect) {
     double errorRate = 0;
-    for (int n = 0; n < dataForRound.size(); n++) {
-      DataVector v = dataForRound.get(n);
+    for (int n = 0; n < data.size(); n++) {
+      DataVector v = data.get(n);
       String predicted = nb.classify(v);
       
       if (predicted.equals(v.getLabel())) {

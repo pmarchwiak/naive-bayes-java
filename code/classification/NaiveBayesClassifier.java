@@ -34,7 +34,7 @@ public class NaiveBayesClassifier implements Classifier {
     boolean isFirstVector = true;
     for (int v = 0; v < trainingData.size(); v++) {
       DataVector vector = trainingData.get(v);
-      logger.fine("Processing vector " + v);
+      logger.finer("Processing vector " + v);
 
       String label = vector.getLabel();
       if (label == null || label.length() == 0) {
@@ -74,7 +74,7 @@ public class NaiveBayesClassifier implements Classifier {
       isFirstVector = false;
     }
 
-    logger.fine("Counts per class:");
+    logger.finer("Counts per class:");
     for (Entry<String, Integer> entry : generalLabelCounts.entrySet()) {
       logger.fine(entry.getKey() + ": " + entry.getValue());
     }
@@ -84,7 +84,7 @@ public class NaiveBayesClassifier implements Classifier {
           .get(i).entrySet()) {
         String attrVal = entry.getKey();
         for (Entry<String, Integer> count : entry.getValue().entrySet()) {
-          logger.fine(String.format(
+          logger.finer(String.format(
               "AttrIdx:%d,attrVal:%s,class:%s: %d", i, attrVal, count.getKey(),
               count.getValue()));
         }
