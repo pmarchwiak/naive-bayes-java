@@ -7,7 +7,7 @@
 <listEntry value="1"/>
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="classification.NBAdaboost"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="/home/patrick/school/cs412-data-min/hw3/data/led24_train /home/patrick/school/cs412-data-min/hw3/data/led24_test 20 true"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="data/led24_train data/led24_test 20 true"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="cs461-hw3-datamining"/>
 <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Djava.util.logging.config.file=code/logging.properties"/>
 </launchConfiguration>

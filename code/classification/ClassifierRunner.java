@@ -28,6 +28,13 @@ public class ClassifierRunner {
     logger.addHandler(ch);
   }
   
+  /**
+   * Parses a tab-separated file where each line represents a tuple and the
+   * first value is a class label.
+   * @param dataFile
+   * @return list of {@code DataVector}s
+   * @throws IOException
+   */
   static List<DataVector> parseData(File dataFile) throws IOException {
     FileInputStream fis = new FileInputStream(dataFile);
     BufferedReader br = new BufferedReader(new InputStreamReader(fis));
