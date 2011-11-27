@@ -13,6 +13,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+/**
+ * Utility methods for running the classifiers.
+ * @author pmarchwiak
+ *
+ */
 public class ClassifierRunner {
 
   static Logger logger = 

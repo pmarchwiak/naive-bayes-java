@@ -1,5 +1,10 @@
 package classification;
 
+/**
+ * Represents a data instance or tuple along with a label, if known.
+ * @author pmarchwiak
+ *
+ */
 public class DataVector {
   private String label;
   private String[] data;

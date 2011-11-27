@@ -9,6 +9,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
 
+/**
+ * AdaBoost using Naive Bayes.
+ * @author pmarchwiak
+ *
+ */
 public class AdaBoostClassifier implements Classifier {
 
   private static Logger logger = 
@@ -19,6 +24,11 @@ public class AdaBoostClassifier implements Classifier {
   
   private static final int MAX_ATTEMPTS = -1;
   
+  /**
+   * 
+   * @param trainingData
+   * @param numRounds
+   */
   public AdaBoostClassifier(List<DataVector> trainingData, int numRounds) {     
     int numSamples = trainingData.size();
     

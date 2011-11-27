@@ -9,6 +9,12 @@ import java.util.logging.ConsoleHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+/**
+ * Implementation of naive Bayes classifier. Uses Laplacian correction for 
+ * smoothing when tuple contains previously unseen attribute value.
+ * @author pmarchwiak
+ *
+ */
 public class NaiveBayesClassifier implements Classifier {
 
   private static Logger logger = 

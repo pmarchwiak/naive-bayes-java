@@ -6,6 +6,12 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
 
+/**
+ * 
+ * @author pmarchwiak
+ *
+ * @param <T>
+ */
 public class WeightedRandom <T> {
   private final NavigableMap<Double, T> weights = new TreeMap<Double, T>();
   private final Random random = new Random();
@@ -20,6 +26,10 @@ public class WeightedRandom <T> {
     }
   }
   
+  /**
+   * 
+   * @return next weighted random value
+   */
   public T next() {
     double nextIndex = random.nextDouble() * total;
     return weights.ceilingEntry(nextIndex).getValue();
