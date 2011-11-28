@@ -23,7 +23,7 @@ public class NBAdaboost {
 
     File trainingFile = new File(args[0]);
     File testingFile = new File(args[1]);
-    int numRounds = 5;
+    int numRounds = 10;
     if (args.length > 2) {
       numRounds = Integer.valueOf(args[2]);
     }
