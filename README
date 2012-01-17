@@ -1,0 +1,3 @@
+A simple Naive Bayes implementation I wrote for a data mining course. Also
+includes an ensemble version that uses the AdaBoost algorithm. Datasets come
+from the UC Irvine Machine Learning Repository.
